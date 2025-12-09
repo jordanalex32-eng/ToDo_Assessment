@@ -1,9 +1,7 @@
 import axios from "axios";
 
-const baseURL =
-  // Prefer env variable when building / running
-  import.meta.env.VITE_API_URL ??
-  // Fallback to your hosted Render API
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
   "https://todo-assessment-6716.onrender.com/api";
 
-export const api = axios.create({ baseURL });
+export const api = axios.create({ baseURL: API_BASE_URL });
