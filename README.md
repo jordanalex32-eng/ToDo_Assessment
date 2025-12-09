@@ -6,26 +6,52 @@
 - Frontend: React, Vite, TypeScript, Redux Toolkit
 - Shared types in `/shared/types.ts`
 
+
+
+
+# Todo App – Full Stack Assessment
+
+Create a full-stack todo application that allows users to manage tasks across multiple categories.
+
+- Backend: Node.js, Express, TypeScript (in-memory store)
+- Frontend: React, Vite, TypeScript, Redux Toolkit
+- Shared types in `/shared/types.ts`
+- Hosted API (Render): `https://todo-assessment-6716.onrender.com/api`
+
+---
+
+
+
 ## Getting started
 
-### 1. Backend API
+###  Quick Start (recommended for reviewers)
 
-```bash
-cd server
+This mode uses the hosted backend on Render and runs only the React client locally.
+
+- Prerequisites:
+
+    Node.js 18+ (20 recommended)
+
+    npm 9+
+
+
+
+###  Front End
+
+# 1. Clone the repo
+git clone https://github.com/jordanalex32-eng/ToDo_Assessment.git
+cd ToDo_Assessment/client
+
+# 2. Install frontend dependencies
 npm install
-npm run dev
 
+# 3. (Optional) Configure API base URL via .env
+# By default the client points to the hosted API:
+#   https://todo-assessment-6716.onrender.com/api
+# If you want to override, create client/.env and set:
+#   VITE_API_URL=...
 
-
-```
-## API will be available at http://localhost:7000/api
-
-
-### 2. Front End
-
-```bash
-cd client
-npm install
+# 4. Run the Vite dev server
 npm run dev
 
 

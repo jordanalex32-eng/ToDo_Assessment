@@ -1,8 +1,9 @@
 import axios from "axios";
 
 const baseURL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:7000/api";
+  // Prefer env variable when building / running
+  import.meta.env.VITE_API_URL ??
+  // Fallback to your hosted Render API
+  "https://todo-assessment-6716.onrender.com/api";
 
-export const api = axios.create({
-  baseURL,
-});
+export const api = axios.create({ baseURL });
