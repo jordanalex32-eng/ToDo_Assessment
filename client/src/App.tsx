@@ -14,9 +14,8 @@ import {
   setFilters
 } from "./todos/todosSlice";
 
-import type {Todo} from "../../shared/types";
-
-
+import type { Todo } from "../../shared/types";
+import "./App.css";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -56,6 +55,7 @@ function App() {
     setTodoTitle("");
     setTodoDescription("");
     setTodoDueDate("");
+    setTodoCategoryId(undefined);
   };
 
   const handleToggle = (todo: Todo) => {
@@ -65,7 +65,7 @@ function App() {
   const handleDelete = (id: string) => {
     dispatch(deleteTodo(id));
   };
-  
+
   const handleEdit = (todo: Todo) => {
     const newTitle = window.prompt("Edit title", todo.title);
     if (!newTitle || !newTitle.trim()) {
@@ -85,12 +85,22 @@ function App() {
       })
     );
   };
-  return (
-    <div className="app">
-      <h1>Todo Assessment</h1>
 
-      <section className="layout">
-        <div className="panel">
+  const getCategoryName = (id?: string | null) =>
+    categories.find(c => c.id === id)?.name ?? "No category";
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>Todo Assessment</h1>
+        <p className="app-subtitle">
+          Plan, prioritise, and close your tasks with a clear overview.
+        </p>
+      </header>
+
+      <main className="layout">
+        {/* LEFT SIDE: categories + filters */}
+        <section className="panel panel--side">
           <h2>Categories</h2>
           <div className="category-input">
             <input
@@ -98,7 +108,9 @@ function App() {
               value={newCategoryName}
               onChange={e => setNewCategoryName(e.target.value)}
             />
-            <button onClick={handleAddCategory}>Add</button>
+            <button type="button" onClick={handleAddCategory}>
+              Add
+            </button>
           </div>
           <ul className="category-list">
             <li
@@ -141,73 +153,128 @@ function App() {
               <option value="dueDate">Due date</option>
             </select>
           </div>
-        </div>
+        </section>
 
-        <div className="panel">
+        {/* RIGHT SIDE: new todo + list */}
+        <section className="panel panel--main">
           <h2>New Todo</h2>
           <div className="todo-form">
-            <input
-              placeholder="Title"
-              value={todoTitle}
-              onChange={e => setTodoTitle(e.target.value)}
-            />
-            <textarea
-              placeholder="Description"
-              value={todoDescription}
-              onChange={e => setTodoDescription(e.target.value)}
-            />
-            <label>
-              Due date:
+            <div className="todo-form-row">
+              <label htmlFor="title">Title</label>
               <input
-                type="date"
-                value={todoDueDate}
-                onChange={e => setTodoDueDate(e.target.value)}
+                id="title"
+                placeholder="Title"
+                value={todoTitle}
+                onChange={e => setTodoTitle(e.target.value)}
               />
-            </label>
-            <label>
-              Category:
-              <select
-                value={todoCategoryId ?? ""}
-                onChange={e =>
-                  setTodoCategoryId(e.target.value || undefined)
-                }
-              >
-                <option value="">(none)</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button onClick={handleAddTodo}>Add Todo</button>
+            </div>
+
+            <div className="todo-form-row">
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                placeholder="Description"
+                value={todoDescription}
+                onChange={e => setTodoDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="todo-form-bottom">
+              <div className="todo-form-row">
+                <label htmlFor="dueDate">Due date</label>
+                <input
+                  id="dueDate"
+                  type="date"
+                  value={todoDueDate}
+                  onChange={e => setTodoDueDate(e.target.value)}
+                />
+              </div>
+
+              <div className="todo-form-row">
+                <label htmlFor="category">Category</label>
+                <select
+                  id="category"
+                  value={todoCategoryId ?? ""}
+                  onChange={e =>
+                    setTodoCategoryId(e.target.value || undefined)
+                  }
+                >
+                  <option value="">(none)</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="todo-form-actions">
+                <button type="button" onClick={handleAddTodo}>
+                  Add Todo
+                </button>
+              </div>
+            </div>
           </div>
 
-          <h2>Todos</h2>
-          {loading && <p>Loading…</p>}
+          <div className="todos-header">
+            <h2>Todos</h2>
+            <span className="todos-meta">
+              {todos.filter(t => t.status === "active").length} active •{" "}
+              {todos.filter(t => t.status === "completed").length} completed
+            </span>
+          </div>
+
+          {loading && <p className="loading">Loading…</p>}
+
           <ul className="todo-list">
             {todos.map(t => (
-              <li key={t.id} className={t.status === "completed" ? "done" : ""}>
-                <div>
-                  <strong>{t.title}</strong>
-                  {t.description && <p>{t.description}</p>}
-                  <small>
+              <li
+                key={t.id}
+                className={`todo-item ${
+                  t.status === "completed" ? "done" : ""
+                }`}
+              >
+                <div className="todo-main">
+                  <div className="todo-title-row">
+                    <strong>{t.title}</strong>
+                    <span className="todo-badge">
+                      {getCategoryName(t.categoryId)}
+                    </span>
+                    <span
+                      className={`todo-status-badge ${
+                        t.status === "completed" ? "completed" : "active"
+                      }`}
+                    >
+                      {t.status === "completed" ? "Completed" : "Active"}
+                    </span>
+                  </div>
+                  {t.description && (
+                    <p className="todo-description">{t.description}</p>
+                  )}
+                  <small className="todo-meta">
                     Created: {new Date(t.createdAt).toLocaleString()}
-                    {t.dueDate && ` • Due: ${new Date(t.dueDate).toLocaleDateString()}`}
+                    {t.dueDate &&
+                      ` • Due: ${new Date(
+                        t.dueDate
+                      ).toLocaleDateString()}`}
                   </small>
                 </div>
                 <div className="todo-actions">
-                  <button onClick={() => handleToggle(t)}>
+                  <button type="button" onClick={() => handleToggle(t)}>
                     {t.status === "completed" ? "Mark Active" : "Mark Done"}
                   </button>
-                  <button onClick={() => handleEdit(t)}>Edit</button>
-                  <button onClick={() => handleDelete(t.id)}>Delete</button>
+                  <button type="button" onClick={() => handleEdit(t)}>
+                    Edit
+                  </button>
+                  <button type="button" onClick={() => handleDelete(t.id)}>
+                    Delete
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }
