@@ -1,7 +1,7 @@
-
 import type { Request } from "express";
+import { randomUUID } from "crypto";
 
-export const createId = () => crypto.randomUUID?.() ?? Date.now().toString();
+export const createId = () => randomUUID();
 
 export function requireField(body: any, field: string): string {
   const value = body[field];

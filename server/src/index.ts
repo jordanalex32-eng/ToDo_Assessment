@@ -1,8 +1,9 @@
-import express = require("express");
+
+import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
-import todosRouter from "../src/routes/todos.js";
-import categoriesRouter from "../src/routes/categories.js";
+import todosRouter from "./routes/todos.js";
+import categoriesRouter from "./routes/categories.js";
 
 const app = express();
 const PORT = process.env.PORT || 7000;

@@ -10,8 +10,8 @@ import {
   createTodo,
   deleteTodo,
   toggleTodoStatus,
+  updateTodo,
   setFilters
-  
 } from "./todos/todosSlice";
 
 import type {Todo} from "../../shared/types";
@@ -65,7 +65,26 @@ function App() {
   const handleDelete = (id: string) => {
     dispatch(deleteTodo(id));
   };
+  
+  const handleEdit = (todo: Todo) => {
+    const newTitle = window.prompt("Edit title", todo.title);
+    if (!newTitle || !newTitle.trim()) {
+      return;
+    }
 
+    const newDescription = window.prompt(
+      "Edit description",
+      todo.description ?? ""
+    );
+
+    dispatch(
+      updateTodo({
+        ...todo,
+        title: newTitle.trim(),
+        description: (newDescription ?? "").trim()
+      })
+    );
+  };
   return (
     <div className="app">
       <h1>Todo Assessment</h1>
@@ -181,6 +200,7 @@ function App() {
                   <button onClick={() => handleToggle(t)}>
                     {t.status === "completed" ? "Mark Active" : "Mark Done"}
                   </button>
+                  <button onClick={() => handleEdit(t)}>Edit</button>
                   <button onClick={() => handleDelete(t.id)}>Delete</button>
                 </div>
               </li>

@@ -1,52 +1,66 @@
+
 import { Router } from "express";
-import { todos, categories } from "../db.js";
+import { todos } from "../db.js";
 import type { Todo, TodoStatus } from "../../../shared/types.js";
-import  {
-  createId,
-  requireField,
-  parseOptionalDate,
-  getQueryParam
-} from "../utils.js";
+import { createId, requireField, parseOptionalDate, getQueryParam } from "../utils.js";
 
 const router = Router();
 
+// GET /api/todos
+router.get("/", (req, res, next) => {
+  try {
+    const statusParam = getQueryParam(req, "status");
+    const sortBy = getQueryParam(req, "sortBy") ?? "createdAt";
+    const categoryId = getQueryParam(req, "categoryId");
 
-router.get("/", (req, res) => {
-  let results = [...todos];
+    let result = [...todos];
 
-  const status = getQueryParam(req, "status");
-  if (status === "active" || status === "completed") {
-    results = results.filter(t => t.status === status);
-  }
+    if (statusParam && statusParam !== "all") {
+      if (statusParam !== "active" && statusParam !== "completed") {
+        throw new Error('Invalid "status" filter. Must be "all", "active", or "completed".');
+      }
+      result = result.filter(t => t.status === statusParam);
+    }
 
-  const categoryId = getQueryParam(req, "categoryId");
-  if (categoryId) {
-    results = results.filter(t => t.categoryId === categoryId);
-  }
+    if (categoryId) {
+      result = result.filter(t => t.categoryId === categoryId);
+    }
 
-  const sortBy = getQueryParam(req, "sortBy");
-  if (sortBy === "dueDate" || sortBy === "createdAt") {
-    results.sort((a, b) => {
-      const av = a[sortBy] ?? "";
-      const bv = b[sortBy] ?? "";
+    const field: "createdAt" | "dueDate" = sortBy === "dueDate" ? "dueDate" : "createdAt";
+
+    result.sort((a, b) => {
+      const av = a[field];
+      const bv = b[field];
+
+      // handle null dueDate
+      if (!av && !bv) return 0;
+      if (!av) return 1;
+      if (!bv) return -1;
+
       return av.localeCompare(bv);
     });
-  }
 
-  res.json(results);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
 });
 
-
+// POST /api/todos
 router.post("/", (req, res, next) => {
   try {
     const title = requireField(req.body, "title");
-    const description = typeof req.body.description === "string" ? req.body.description : undefined;
+
+    const description =
+      typeof req.body.description === "string" ? req.body.description.trim() : "";
+
     const dueDate = parseOptionalDate(req.body.dueDate, "dueDate");
 
-    const categoryId = typeof req.body.categoryId === "string" ? req.body.categoryId : undefined;
-    if (categoryId && !categories.some(c => c.id === categoryId)) {
-      return res.status(400).json({ message: "Invalid categoryId" });
-    }
+    const rawCategoryId = req.body.categoryId;
+    const categoryId =
+      typeof rawCategoryId === "string" && rawCategoryId.trim() !== ""
+        ? rawCategoryId.trim()
+        : null;
 
     const todo: Todo = {
       id: createId(),
@@ -65,31 +79,42 @@ router.post("/", (req, res, next) => {
   }
 });
 
-
+// PUT /api/todos/:id
 router.put("/:id", (req, res, next) => {
   try {
     const { id } = req.params;
     const todo = todos.find(t => t.id === id);
     if (!todo) return res.status(404).json({ message: "Todo not found" });
 
-    const title = requireField(req.body, "title");
-    const description = typeof req.body.description === "string" ? req.body.description : undefined;
-    const dueDate = parseOptionalDate(req.body.dueDate, "dueDate");
-    const status = req.body.status as TodoStatus | undefined;
-    const categoryId = typeof req.body.categoryId === "string" ? req.body.categoryId : undefined;
-
-    if (categoryId && !categories.some(c => c.id === categoryId)) {
-      return res.status(400).json({ message: "Invalid categoryId" });
-    }
-    if (status && status !== "active" && status !== "completed") {
-      return res.status(400).json({ message: "Invalid status" });
+    if (typeof req.body.title === "string") {
+      const title = req.body.title.trim();
+      if (!title) {
+        throw new Error('Field "title" is required and must be a non-empty string.');
+      }
+      todo.title = title;
     }
 
-    todo.title = title;
-    todo.description = description;
-    todo.dueDate = dueDate;
-    if (status) todo.status = status;
-    todo.categoryId = categoryId;
+    if (typeof req.body.description === "string") {
+      todo.description = req.body.description.trim();
+    }
+
+    if ("dueDate" in req.body) {
+      todo.dueDate = parseOptionalDate(req.body.dueDate, "dueDate");
+    }
+
+    if ("status" in req.body) {
+      const status = req.body.status as TodoStatus;
+      if (status !== "active" && status !== "completed") {
+        throw new Error('Field "status" must be "active" or "completed".');
+      }
+      todo.status = status;
+    }
+
+    if ("categoryId" in req.body) {
+      const raw = req.body.categoryId;
+      todo.categoryId =
+        typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
+    }
 
     res.json(todo);
   } catch (err) {
@@ -97,21 +122,7 @@ router.put("/:id", (req, res, next) => {
   }
 });
 
-
-router.patch("/:id/status", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body as { status?: TodoStatus };
-  if (status !== "active" && status !== "completed") {
-    return res.status(400).json({ message: "status must be 'active' or 'completed'" });
-  }
-  const todo = todos.find(t => t.id === id);
-  if (!todo) return res.status(404).json({ message: "Todo not found" });
-
-  todo.status = status;
-  res.json(todo);
-});
- 
-
+// DELETE /api/todos/:id
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
   const idx = todos.findIndex(t => t.id === id);
@@ -119,6 +130,25 @@ router.delete("/:id", (req, res) => {
 
   todos.splice(idx, 1);
   res.status(204).end();
+});
+
+// PATCH /api/todos/:id/status
+router.patch("/:id/status", (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return res.status(404).json({ message: "Todo not found" });
+
+    const status = requireField(req.body, "status") as TodoStatus;
+    if (status !== "active" && status !== "completed") {
+      throw new Error('Field "status" must be "active" or "completed".');
+    }
+
+    todo.status = status;
+    res.json(todo);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
